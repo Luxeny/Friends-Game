@@ -135,51 +135,12 @@ let handle:
     ) => Promise<void>)
   | null = null;
 
-function isProbeUserAgent(userAgent: string) {
-  const ua = userAgent.toLowerCase();
-  if (!ua) return true;
+function isHealthProbe(pathname: string) {
   return (
-    ua.includes("curl") ||
-    ua.includes("wget") ||
-    ua.includes("go-http-client") ||
-    ua.includes("health")
-  );
-}
-
-function isHealthProbe(
-  req: import("http").IncomingMessage,
-  pathname: string
-) {
-  const method = req.method ?? "GET";
-
-  if (
     pathname === "/health" ||
     pathname === "/health/" ||
     pathname === "/ping"
-  ) {
-    return true;
-  }
-
-  if (pathname !== "/") {
-    return false;
-  }
-
-  if (method === "HEAD") {
-    return true;
-  }
-
-  if (method === "GET") {
-    const accept = req.headers.accept ?? "";
-    const ua = req.headers["user-agent"] ?? "";
-    if (!accept.includes("text/html")) {
-      return true;
-    }
-    if (isProbeUserAgent(ua)) {
-      return true;
-    }
-  }
-
-  return false;
+  );
 }
 
 function serveRequest(
@@ -189,7 +150,7 @@ function serveRequest(
   const pathname = req.url?.split("?")[0] ?? "/";
   const method = req.method ?? "GET";
 
-  if (isHealthProbe(req, pathname)) {
+  if (isHealthProbe(pathname)) {
     console.log(
       `[health] ${method} ${pathname} from ${req.socket.remoteAddress ?? "?"}`
     );

@@ -32,7 +32,6 @@ function respondOk(req, res) {
 
 function appHealthHandler(req, res) {
   const path = (req.url || "/").split("?")[0];
-  const method = req.method || "GET";
 
   if (
     path === "/health" ||
@@ -41,23 +40,6 @@ function appHealthHandler(req, res) {
   ) {
     respondOk(req, res);
     return;
-  }
-
-  if (path === "/") {
-    const accept = req.headers.accept ?? "";
-    const ua = (req.headers["user-agent"] ?? "").toLowerCase();
-    const isProbe =
-      method === "HEAD" ||
-      !accept.includes("text/html") ||
-      ua.includes("curl") ||
-      ua.includes("wget") ||
-      ua.includes("go-http-client") ||
-      ua.includes("health");
-
-    if (isProbe) {
-      respondOk(req, res);
-      return;
-    }
   }
 
   res.writeHead(503, { "Content-Type": "text/plain", Connection: "close" });
