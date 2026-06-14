@@ -114,7 +114,7 @@ export function GameVictoryFinale({
       ? words.length
       : wordCount;
   const bloodPhase =
-    inDialogue && !isWhiteScreen && phase !== "screamer" && phase !== "flicker";
+    (phase === "typing" || phase === "holding") && !isWhiteScreen;
 
   const requestSkip = useCallback(() => {
     if (hasVoted) return;
@@ -255,7 +255,7 @@ export function GameVictoryFinale({
         </div>
       )}
 
-      {showDialogueNeko && phase !== "screamer" && (
+      {showDialogueNeko && (
         <div
           className="game-finale-neko"
           style={{ "--neko-sprite": `url(${NEKO_SPRITE})` } as CSSProperties}
