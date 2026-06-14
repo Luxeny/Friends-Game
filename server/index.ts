@@ -23,6 +23,10 @@ import {
 
 loadEnv();
 
+console.log(
+  `[boot] Friends' Game starting (NODE_ENV=${process.env.NODE_ENV ?? "unset"}, PORT=${process.env.PORT ?? "8080"})`
+);
+
 function allPlayersSkipped(
   votes: string[],
   players: { id: string }[]
