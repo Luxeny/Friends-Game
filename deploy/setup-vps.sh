@@ -46,9 +46,8 @@ systemctl restart friends-game
 
 echo "==> nginx"
 cp deploy/nginx/friends-game.conf /etc/nginx/sites-available/friends-game.conf
-if [ -n "$DOMAIN" ]; then
-  sed -i "s/YOUR_DOMAIN/$DOMAIN/g" /etc/nginx/sites-available/friends-game.conf
-fi
+SERVER_NAME="${DOMAIN:-${PUBLIC_IP:-_}}"
+sed -i "s/YOUR_DOMAIN/$SERVER_NAME/g" /etc/nginx/sites-available/friends-game.conf
 ln -sf /etc/nginx/sites-available/friends-game.conf /etc/nginx/sites-enabled/friends-game.conf
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
