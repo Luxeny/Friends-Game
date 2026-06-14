@@ -2,7 +2,7 @@ FROM node:22-slim
 
 WORKDIR /app
 
-ARG CACHEBUST=4
+ARG CACHEBUST=5
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -17,6 +17,5 @@ ENV PORT=8080
 ENV HOSTNAME=0.0.0.0
 
 EXPOSE 8080
-EXPOSE 80
 
 ENTRYPOINT ["./start.sh"]

@@ -81,6 +81,29 @@ let handle:
     ) => Promise<void>)
   | null = null;
 
+function isLocalAddress(addr: string | undefined) {
+  return (
+    addr === "127.0.0.1" ||
+    addr === "::1" ||
+    addr === "::ffff:127.0.0.1"
+  );
+}
+
+function isHealthProbe(
+  req: import("http").IncomingMessage,
+  pathname: string
+) {
+  if (
+    pathname === "/health" ||
+    pathname === "/health/" ||
+    pathname === "/ping"
+  ) {
+    return true;
+  }
+
+  return pathname === "/" && isLocalAddress(req.socket.remoteAddress);
+}
+
 function serveRequest(
   req: import("http").IncomingMessage,
   res: import("http").ServerResponse
@@ -88,11 +111,7 @@ function serveRequest(
   const pathname = req.url?.split("?")[0] ?? "/";
   const method = req.method ?? "GET";
 
-  if (
-    pathname === "/health" ||
-    pathname === "/health/" ||
-    pathname === "/ping"
-  ) {
+  if (isHealthProbe(req, pathname)) {
     console.log(
       `[health] ${method} ${pathname} from ${req.socket.remoteAddress ?? "?"}`
     );
