@@ -93,6 +93,8 @@ function isHealthProbe(
   req: import("http").IncomingMessage,
   pathname: string
 ) {
+  const method = req.method ?? "GET";
+
   if (
     pathname === "/health" ||
     pathname === "/health/" ||
@@ -101,7 +103,16 @@ function isHealthProbe(
     return true;
   }
 
-  return pathname === "/" && isLocalAddress(req.socket.remoteAddress);
+  if (pathname !== "/") {
+    return false;
+  }
+
+  // Timeweb probes with HEAD / from the Docker network (e.g. 172.18.0.2).
+  if (method === "HEAD") {
+    return true;
+  }
+
+  return isLocalAddress(req.socket.remoteAddress);
 }
 
 function serveRequest(
