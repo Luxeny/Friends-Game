@@ -36,8 +36,8 @@ server.on("error", (err) => {
   process.exit(1);
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`[preload] port open on 0.0.0.0:${port}`);
+server.listen({ port, host: "::", ipv6Only: false }, () => {
+  console.log(`[preload] port open on [::]:${port} (dual-stack)`);
 
   process.env.FG_PRELOAD = "1";
 
