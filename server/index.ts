@@ -90,15 +90,7 @@ let handle:
     ) => Promise<void>)
   | null = null;
 
-function isLocalAddress(addr: string | undefined) {
-  return (
-    addr === "127.0.0.1" ||
-    addr === "::1" ||
-    addr === "::ffff:127.0.0.1"
-  );
-}
-
-function isProbeUserAgent(userAgent: string) {
+let handle:
   const ua = userAgent.toLowerCase();
   if (!ua) return true;
   return (
@@ -142,7 +134,7 @@ function isHealthProbe(
     }
   }
 
-  return isLocalAddress(req.socket.remoteAddress);
+  return false;
 }
 
 function serveRequest(

@@ -4,15 +4,14 @@ const http = require("http");
 
 const appPort = Number(process.env.PORT || 8080);
 
-function respondOk(req, res, label) {
+function respondOk(req, res) {
   const path = (req.url || "/").split("?")[0];
   const method = req.method || "GET";
 
   console.log(
-    `[health${label}] ${method} ${path} from ${req.socket.remoteAddress || "?"}`
+    `[health] ${method} ${path} from ${req.socket.remoteAddress || "?"}`
   );
 
-  const body = method === "HEAD" ? undefined : "ok";
   const headers = {
     "Content-Type": "text/plain",
     Connection: "close",
@@ -24,24 +23,11 @@ function respondOk(req, res, label) {
   }
 
   res.writeHead(200, headers);
-  res.end(body);
-}
-
-function platformHealthHandler(req, res) {
-  const path = (req.url || "/").split("?")[0];
-
-  if (
-    path === "/health" ||
-    path === "/health/" ||
-    path === "/ping" ||
-    path === "/"
-  ) {
-    respondOk(req, res, ":80");
+  if (method === "HEAD") {
+    res.end();
     return;
   }
-
-  res.writeHead(404, { "Content-Type": "text/plain", Connection: "close" });
-  res.end("not found");
+  res.end("ok");
 }
 
 function appHealthHandler(req, res) {
@@ -53,7 +39,7 @@ function appHealthHandler(req, res) {
     path === "/health/" ||
     path === "/ping"
   ) {
-    respondOk(req, res, "");
+    respondOk(req, res);
     return;
   }
 
@@ -63,30 +49,19 @@ function appHealthHandler(req, res) {
     const isProbe =
       method === "HEAD" ||
       !accept.includes("text/html") ||
-      !ua ||
       ua.includes("curl") ||
       ua.includes("wget") ||
       ua.includes("go-http-client") ||
       ua.includes("health");
 
     if (isProbe) {
-      respondOk(req, res, "");
+      respondOk(req, res);
       return;
     }
   }
 
   res.writeHead(503, { "Content-Type": "text/plain", Connection: "close" });
   res.end("starting");
-}
-
-if (appPort !== 80) {
-  const platformServer = http.createServer(platformHealthHandler);
-  platformServer.on("error", (err) => {
-    console.error("[preload] platform health listen error:", err);
-  });
-  platformServer.listen(80, "0.0.0.0", () => {
-    console.log("[preload] platform health listening on 0.0.0.0:80");
-  });
 }
 
 global.__fgServeRequest = appHealthHandler;
