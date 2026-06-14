@@ -62,18 +62,43 @@ function HomePageContent() {
     const playerId = persistPlayer();
     const socket = getSocket();
 
-    socket.emit(
-      "room:create",
-      { playerId, name: name.trim(), avatarId },
-      (res: { ok: boolean; room?: Room; error?: string }) => {
-        setLoading(false);
-        if (!res.ok || !res.room) {
-          setError(res.error || "Не удалось создать комнату");
-          return;
-        }
-        router.push(`/room/${res.room.code}`);
+    const timeout = window.setTimeout(() => {
+      setLoading(false);
+      setError("Нет связи с сервером. Обновите страницу.");
+    }, 10000);
+
+    const finish = (res: { ok: boolean; room?: Room; error?: string }) => {
+      window.clearTimeout(timeout);
+      setLoading(false);
+      if (!res.ok || !res.room) {
+        setError(res.error || "Не удалось создать комнату");
+        return;
       }
-    );
+      router.push(`/room/${res.room.code}`);
+    };
+
+    if (socket.connected) {
+      socket.emit(
+        "room:create",
+        { playerId, name: name.trim(), avatarId },
+        finish
+      );
+      return;
+    }
+
+    socket.once("connect", () => {
+      socket.emit(
+        "room:create",
+        { playerId, name: name.trim(), avatarId },
+        finish
+      );
+    });
+    socket.once("connect_error", () => {
+      window.clearTimeout(timeout);
+      setLoading(false);
+      setError("Нет связи с сервером. Обновите страницу.");
+    });
+    socket.connect();
   }
 
   function joinRoom(codeOverride?: string) {
@@ -90,23 +115,53 @@ function HomePageContent() {
     const playerId = persistPlayer();
     const socket = getSocket();
 
-    socket.emit(
-      "room:join",
-      {
-        code,
-        playerId,
-        name: name.trim(),
-        avatarId,
-      },
-      (res: { ok: boolean; room?: Room; error?: string }) => {
-        setLoading(false);
-        if (!res.ok || !res.room) {
-          setError(res.error || "Не удалось войти");
-          return;
-        }
-        router.push(`/room/${res.room.code}`);
+    const timeout = window.setTimeout(() => {
+      setLoading(false);
+      setError("Нет связи с сервером. Обновите страницу.");
+    }, 10000);
+
+    const finish = (res: { ok: boolean; room?: Room; error?: string }) => {
+      window.clearTimeout(timeout);
+      setLoading(false);
+      if (!res.ok || !res.room) {
+        setError(res.error || "Не удалось войти");
+        return;
       }
-    );
+      router.push(`/room/${res.room.code}`);
+    };
+
+    if (socket.connected) {
+      socket.emit(
+        "room:join",
+        {
+          code,
+          playerId,
+          name: name.trim(),
+          avatarId,
+        },
+        finish
+      );
+      return;
+    }
+
+    socket.once("connect", () => {
+      socket.emit(
+        "room:join",
+        {
+          code,
+          playerId,
+          name: name.trim(),
+          avatarId,
+        },
+        finish
+      );
+    });
+    socket.once("connect_error", () => {
+      window.clearTimeout(timeout);
+      setLoading(false);
+      setError("Нет связи с сервером. Обновите страницу.");
+    });
+    socket.connect();
   }
 
   return (
