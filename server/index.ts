@@ -27,6 +27,30 @@ console.log(
   `[boot] Friends' Game starting (NODE_ENV=${process.env.NODE_ENV ?? "unset"}, PORT=${process.env.PORT ?? "8080"})`
 );
 
+process.on("uncaughtException", (err) => {
+  console.error("[fatal] uncaughtException:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("[fatal] unhandledRejection:", err);
+  process.exit(1);
+});
+
+function respondPlain(
+  res: import("http").ServerResponse,
+  status: number,
+  body: string,
+  method?: string
+) {
+  res.writeHead(status, { "Content-Type": "text/plain", Connection: "close" });
+  if (method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(body);
+}
+
 function allPlayersSkipped(
   votes: string[],
   players: { id: string }[]
@@ -55,16 +79,19 @@ let appReady = false;
 
 const server = createServer((req, res) => {
   const pathname = req.url?.split("?")[0] ?? "/";
+  const method = req.method ?? "GET";
 
   if (pathname === "/health") {
-    res.writeHead(appReady ? 200 : 503, { "Content-Type": "text/plain" });
-    res.end(appReady ? "ok" : "starting");
+    respondPlain(res, 200, appReady ? "ok" : "starting", method);
     return;
   }
 
   if (!appReady) {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("ok");
+    if (pathname === "/") {
+      respondPlain(res, 200, "starting", method);
+      return;
+    }
+    respondPlain(res, 503, "starting", method);
     return;
   }
 
@@ -74,6 +101,20 @@ const server = createServer((req, res) => {
 const io = new Server(server, {
   cors: { origin: "*" },
   path: "/socket.io",
+});
+
+server.listen(port, "0.0.0.0", () => {
+  console.log(`> Friends' Game listening on http://0.0.0.0:${port}`);
+});
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
+    );
+    process.exit(1);
+  }
+  throw err;
 });
 
 io.on("connection", (socket) => {
@@ -446,20 +487,6 @@ io.on("connection", (socket) => {
 
       currentCode = null;
   });
-});
-
-server.listen(port, "0.0.0.0", () => {
-  console.log(`> Friends' Game listening on http://0.0.0.0:${port}`);
-});
-
-server.on("error", (err: NodeJS.ErrnoException) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(
-      `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
-    );
-    process.exit(1);
-  }
-  throw err;
 });
 
 void app
