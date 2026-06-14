@@ -43,7 +43,16 @@ function respondPlain(
   body: string,
   method?: string
 ) {
-  res.writeHead(status, { "Content-Type": "text/plain", Connection: "close" });
+  const headers: Record<string, string> = {
+    "Content-Type": "text/plain",
+    Connection: "close",
+  };
+  if (method === "HEAD") {
+    headers["Content-Length"] = "0";
+  } else {
+    headers["Content-Length"] = String(Buffer.byteLength(body));
+  }
+  res.writeHead(status, headers);
   if (method === "HEAD") {
     res.end();
     return;
@@ -89,6 +98,17 @@ function isLocalAddress(addr: string | undefined) {
   );
 }
 
+function isProbeUserAgent(userAgent: string) {
+  const ua = userAgent.toLowerCase();
+  if (!ua) return true;
+  return (
+    ua.includes("curl") ||
+    ua.includes("wget") ||
+    ua.includes("go-http-client") ||
+    ua.includes("health")
+  );
+}
+
 function isHealthProbe(
   req: import("http").IncomingMessage,
   pathname: string
@@ -107,15 +127,17 @@ function isHealthProbe(
     return false;
   }
 
-  // Timeweb probes with HEAD / from the Docker network (e.g. 172.18.0.2).
   if (method === "HEAD") {
     return true;
   }
 
-  // Timeweb deploy checks use GET (docs); probes send */*, not text/html.
   if (method === "GET") {
     const accept = req.headers.accept ?? "";
+    const ua = req.headers["user-agent"] ?? "";
     if (!accept.includes("text/html")) {
+      return true;
+    }
+    if (isProbeUserAgent(ua)) {
       return true;
     }
   }
