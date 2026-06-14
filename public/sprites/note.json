@@ -1,0 +1,11 @@
+{
+  "name": "note",
+  "width": 15,
+  "height": 15,
+  "frames": [
+    {
+      "file": "note-0.png",
+      "duration": 100
+    }
+  ]
+}

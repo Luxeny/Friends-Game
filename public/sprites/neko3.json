@@ -1,0 +1,11 @@
+{
+  "name": "neko3",
+  "width": 50,
+  "height": 50,
+  "frames": [
+    {
+      "file": "neko3-0.png",
+      "duration": 100
+    }
+  ]
+}
