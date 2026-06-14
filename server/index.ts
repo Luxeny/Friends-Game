@@ -112,6 +112,14 @@ function isHealthProbe(
     return true;
   }
 
+  // Timeweb deploy checks use GET (docs); probes send */*, not text/html.
+  if (method === "GET") {
+    const accept = req.headers.accept ?? "";
+    if (!accept.includes("text/html")) {
+      return true;
+    }
+  }
+
   return isLocalAddress(req.socket.remoteAddress);
 }
 

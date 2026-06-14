@@ -33,19 +33,26 @@ function healthHandler(req, res) {
   }
 
   if (path === "/") {
-    console.log(
-      `[health] ${method} ${path} from ${req.socket.remoteAddress || "?"}`
-    );
-    res.writeHead(200, {
-      "Content-Type": "text/plain",
-      Connection: "close",
-    });
-    if (method === "HEAD") {
-      res.end();
+    const accept = req.headers.accept ?? "";
+    const isProbe =
+      method === "HEAD" ||
+      (method === "GET" && !accept.includes("text/html"));
+
+    if (isProbe) {
+      console.log(
+        `[health] ${method} ${path} from ${req.socket.remoteAddress || "?"}`
+      );
+      res.writeHead(200, {
+        "Content-Type": "text/plain",
+        Connection: "close",
+      });
+      if (method === "HEAD") {
+        res.end();
+        return;
+      }
+      res.end("ok");
       return;
     }
-    res.end("ok");
-    return;
   }
 
   res.writeHead(503, { "Content-Type": "text/plain", Connection: "close" });

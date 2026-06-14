@@ -2,7 +2,7 @@ FROM node:22-slim
 
 WORKDIR /app
 
-ARG CACHEBUST=6
+ARG CACHEBUST=7
 
 COPY package.json package-lock.json ./
 RUN npm ci
