@@ -88,8 +88,15 @@ function serveRequest(
   const pathname = req.url?.split("?")[0] ?? "/";
   const method = req.method ?? "GET";
 
-  if (pathname === "/health") {
-    respondPlain(res, 200, appReady ? "ok" : "starting", method);
+  if (
+    pathname === "/health" ||
+    pathname === "/health/" ||
+    pathname === "/ping"
+  ) {
+    console.log(
+      `[health] ${method} ${pathname} from ${req.socket.remoteAddress ?? "?"}`
+    );
+    respondPlain(res, 200, "ok", method);
     return;
   }
 
