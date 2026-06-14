@@ -1,6 +1,7 @@
 "use client";
 
 import { io, Socket } from "socket.io-client";
+import { v4 as uuidv4 } from "uuid";
 import type { GameModeId, Room } from "@/shared/types";
 
 let socket: Socket | null = null;
@@ -40,7 +41,7 @@ export function savePlayer(player: StoredPlayer) {
 }
 
 export function createPlayerId(): string {
-  return crypto.randomUUID();
+  return uuidv4();
 }
 
 export type RoomUpdateCallback = (room: Room) => void;
