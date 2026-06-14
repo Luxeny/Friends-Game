@@ -17,7 +17,7 @@ function earlyHandler(req, res) {
       res.end();
       return;
     }
-    res.end("starting");
+    res.end("ok");
     return;
   }
 
