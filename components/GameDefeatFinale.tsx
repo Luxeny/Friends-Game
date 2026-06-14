@@ -253,7 +253,7 @@ export function GameDefeatFinale({
         <div className="game-defeat-screen-shatter" aria-hidden />
       )}
 
-      {showErrors && phase !== "error-single" && (
+      {showErrors && (
         <ErrorStorm layers={errorLayers} intense={intenseStorm && phase === "error-storm"} />
       )}
 
