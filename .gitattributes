@@ -1,3 +1,4 @@
 *.sh text eol=lf
 server/preload.cjs text eol=lf
 healthcheck.cjs text eol=lf
+deploy/*.sh text eol=lf
