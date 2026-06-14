@@ -90,7 +90,7 @@ let handle:
     ) => Promise<void>)
   | null = null;
 
-let handle:
+function isProbeUserAgent(userAgent: string) {
   const ua = userAgent.toLowerCase();
   if (!ua) return true;
   return (
