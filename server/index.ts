@@ -43,19 +43,36 @@ function markInterludeDone(
 }
 
 const dev = process.env.NODE_ENV !== "production";
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "8080", 10);
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
+let appReady = false;
 
-app.prepare().then(() => {
-  const server = createServer((req, res) => handle(req, res));
-  const io = new Server(server, {
-    cors: { origin: "*" },
-    path: "/socket.io",
-  });
+const server = createServer((req, res) => {
+  const pathname = req.url?.split("?")[0] ?? "/";
 
-  io.on("connection", (socket) => {
+  if (pathname === "/health") {
+    res.writeHead(appReady ? 200 : 503, { "Content-Type": "text/plain" });
+    res.end(appReady ? "ok" : "starting");
+    return;
+  }
+
+  if (!appReady) {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("ok");
+    return;
+  }
+
+  handle(req, res);
+});
+
+const io = new Server(server, {
+  cors: { origin: "*" },
+  path: "/socket.io",
+});
+
+io.on("connection", (socket) => {
     let currentCode: string | null = null;
     let playerId: string | null = null;
 
@@ -424,20 +441,30 @@ app.prepare().then(() => {
       }
 
       currentCode = null;
-    });
-  });
-
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`> Friends' Game ready on http://0.0.0.0:${port}`);
-  });
-
-  server.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code === "EADDRINUSE") {
-      console.error(
-        `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
-      );
-      process.exit(1);
-    }
-    throw err;
   });
 });
+
+server.listen(port, "0.0.0.0", () => {
+  console.log(`> Friends' Game listening on http://0.0.0.0:${port}`);
+});
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
+    );
+    process.exit(1);
+  }
+  throw err;
+});
+
+void app
+  .prepare()
+  .then(() => {
+    appReady = true;
+    console.log("> Friends' Game ready");
+  })
+  .catch((err) => {
+    console.error("> Failed to start Friends' Game:", err);
+    process.exit(1);
+  });
