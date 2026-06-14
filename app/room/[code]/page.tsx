@@ -85,13 +85,14 @@ export default function RoomPage() {
 
     enterRoomSocket(code, player, setRoom);
 
-    const onPageHide = () => {
-      void leaveRoomSocket(code, player.id);
+    const socket = getSocket();
+    const onReconnect = () => {
+      enterRoomSocket(code, player, setRoom);
     };
-    window.addEventListener("pagehide", onPageHide);
+    socket.on("connect", onReconnect);
 
     return () => {
-      window.removeEventListener("pagehide", onPageHide);
+      socket.off("connect", onReconnect);
     };
   }, [code, player, profileReady]);
 

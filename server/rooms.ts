@@ -65,11 +65,30 @@ export function joinRoom(
   return { room };
 }
 
-export function leaveRoom(code: string, playerId: string): Room | null {
+export function setPlayerConnected(
+  code: string,
+  playerId: string,
+  connected: boolean
+): Room | null {
   const room = getRoom(code);
   if (!room) return null;
 
-  const shouldAbortGame = room.gameState != null;
+  const player = room.players.find((p) => p.id === playerId);
+  if (!player) return null;
+
+  player.connected = connected;
+  return room;
+}
+
+export function leaveRoom(
+  code: string,
+  playerId: string,
+  options?: { abortGame?: boolean }
+): Room | null {
+  const room = getRoom(code);
+  if (!room) return null;
+
+  const shouldAbortGame = options?.abortGame !== false && room.gameState != null;
 
   const idx = room.players.findIndex((p) => p.id === playerId);
   if (idx === -1) return room;

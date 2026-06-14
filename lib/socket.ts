@@ -12,6 +12,10 @@ export function getSocket(): Socket {
     socket = io({
       path: "/socket.io",
       autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
   }
   return socket;

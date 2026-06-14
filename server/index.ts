@@ -18,8 +18,53 @@ import {
   joinRoom,
   leaveRoom,
   sanitizeRoom,
+  setPlayerConnected,
   startGame,
 } from "./rooms";
+
+const DISCONNECT_GRACE_MS = 120_000;
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function disconnectTimerKey(roomCode: string, pid: string) {
+  return `${roomCode}:${pid}`;
+}
+
+function cancelDisconnectTimer(roomCode: string, pid: string) {
+  const key = disconnectTimerKey(roomCode, pid);
+  const timer = disconnectTimers.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    disconnectTimers.delete(key);
+  }
+}
+
+function schedulePlayerRemoval(
+  io: Server,
+  roomCode: string,
+  pid: string
+) {
+  const room = getRoom(roomCode);
+  if (!room || room.gameState) return;
+
+  cancelDisconnectTimer(roomCode, pid);
+  const key = disconnectTimerKey(roomCode, pid);
+  const timer = setTimeout(() => {
+    disconnectTimers.delete(key);
+    const current = getRoom(roomCode);
+    if (!current || current.gameState) return;
+
+    const player = current.players.find((p) => p.id === pid);
+    if (!player || player.connected) return;
+
+    const updated = leaveRoom(roomCode, pid, { abortGame: false });
+    if (updated) {
+      io.to(roomCode).emit("room:update", sanitizeRoom(updated));
+    } else {
+      cleanupRoom(roomCode);
+    }
+  }, DISCONNECT_GRACE_MS);
+  disconnectTimers.set(key, timer);
+}
 
 loadEnv();
 
@@ -209,6 +254,7 @@ function registerSocketHandlers(io: Server) {
           cb({ ok: false, error: result.error });
           return;
         }
+        cancelDisconnectTimer(result.room.code, data.playerId);
         playerId = data.playerId;
         currentCode = result.room.code;
         socket.join(result.room.code);
@@ -506,7 +552,8 @@ function registerSocketHandlers(io: Server) {
           return;
         }
 
-        const updated = leaveRoom(roomCode, data.playerId);
+        cancelDisconnectTimer(roomCode, data.playerId);
+        const updated = leaveRoom(roomCode, data.playerId, { abortGame: true });
         socket.leave(roomCode);
 
         if (playerId === data.playerId) {
@@ -526,18 +573,17 @@ function registerSocketHandlers(io: Server) {
     socket.on("disconnect", () => {
       if (!currentCode || !playerId) return;
       const roomCode = currentCode;
-      const room = getRoom(roomCode);
+      const pid = playerId;
+      currentCode = null;
 
-      if (room?.players.some((p) => p.id === playerId)) {
-        const updated = leaveRoom(roomCode, playerId);
+      const room = getRoom(roomCode);
+      if (room?.players.some((p) => p.id === pid)) {
+        const updated = setPlayerConnected(roomCode, pid, false);
         if (updated) {
           io.to(roomCode).emit("room:update", sanitizeRoom(updated));
-        } else {
-          cleanupRoom(roomCode);
+          schedulePlayerRemoval(io, roomCode, pid);
         }
       }
-
-      currentCode = null;
     });
   });
 }
