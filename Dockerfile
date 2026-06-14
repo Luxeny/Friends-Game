@@ -14,4 +14,4 @@ ENV HOSTNAME=0.0.0.0
 
 EXPOSE 8080
 
-CMD ["node", "server-dist/server/index.js"]
+CMD ["node", "server/preload.cjs"]

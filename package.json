@@ -6,7 +6,7 @@
     "dev": "tsx server/index.ts",
     "build": "next build",
     "build:server": "tsc -p tsconfig.server.json",
-    "start": "node server-dist/server/index.js",
+    "start": "node server/preload.cjs",
     "lint": "next lint"
   },
   "dependencies": {

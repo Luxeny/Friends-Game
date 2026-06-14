@@ -73,11 +73,18 @@ function markInterludeDone(
 const dev = process.env.NODE_ENV !== "production";
 const port = parseInt(process.env.PORT || "8080", 10);
 
-const app = next({ dev });
-const handle = app.getRequestHandler();
 let appReady = false;
+let handle:
+  | ((
+      req: import("http").IncomingMessage,
+      res: import("http").ServerResponse
+    ) => Promise<void>)
+  | null = null;
 
-const server = createServer((req, res) => {
+function serveRequest(
+  req: import("http").IncomingMessage,
+  res: import("http").ServerResponse
+) {
   const pathname = req.url?.split("?")[0] ?? "/";
   const method = req.method ?? "GET";
 
@@ -95,29 +102,15 @@ const server = createServer((req, res) => {
     return;
   }
 
-  handle(req, res);
-});
-
-const io = new Server(server, {
-  cors: { origin: "*" },
-  path: "/socket.io",
-});
-
-server.listen(port, "0.0.0.0", () => {
-  console.log(`> Friends' Game listening on http://0.0.0.0:${port}`);
-});
-
-server.on("error", (err: NodeJS.ErrnoException) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(
-      `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
-    );
-    process.exit(1);
+  if (handle) {
+    void handle(req, res);
+  } else {
+    respondPlain(res, 503, "starting", method);
   }
-  throw err;
-});
+}
 
-io.on("connection", (socket) => {
+function registerSocketHandlers(io: Server) {
+  io.on("connection", (socket) => {
     let currentCode: string | null = null;
     let playerId: string | null = null;
 
@@ -486,16 +479,56 @@ io.on("connection", (socket) => {
       }
 
       currentCode = null;
+    });
   });
-});
+}
 
-void app
-  .prepare()
-  .then(() => {
-    appReady = true;
-    console.log("> Friends' Game ready");
-  })
-  .catch((err) => {
+export async function attachApplication(
+  httpServer: import("http").Server
+): Promise<void> {
+  (
+    global as typeof globalThis & { __fgServeRequest?: typeof serveRequest }
+  ).__fgServeRequest = serveRequest;
+
+  const app = next({ dev });
+  handle = app.getRequestHandler();
+
+  const io = new Server(httpServer, {
+    cors: { origin: "*" },
+    path: "/socket.io",
+  });
+  registerSocketHandlers(io);
+
+  await app.prepare();
+  appReady = true;
+  console.log("> Friends' Game ready");
+}
+
+export async function startStandalone(): Promise<void> {
+  const server = createServer(serveRequest);
+
+  await new Promise<void>((resolve, reject) => {
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`> Friends' Game listening on http://0.0.0.0:${port}`);
+      resolve();
+    });
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(
+          `\nПорт ${port} уже занят. Закройте другой процесс или задайте другой порт:\n  set PORT=3001 && npm run dev\n`
+        );
+        process.exit(1);
+      }
+      reject(err);
+    });
+  });
+
+  await attachApplication(server);
+}
+
+if (process.env.FG_PRELOAD !== "1") {
+  void startStandalone().catch((err) => {
     console.error("> Failed to start Friends' Game:", err);
     process.exit(1);
   });
+}
