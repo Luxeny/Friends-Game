@@ -11,7 +11,7 @@ import {
   subscribeRoom,
   type StoredPlayer,
 } from "@/lib/socket";
-import { copyRoomLink } from "@/lib/utils";
+import { copyRoomLink, roomInviteUrl } from "@/lib/utils";
 import { AvatarSprite } from "@/components/AvatarSprite";
 import { MusicHorrorSync } from "@/components/MusicHorrorSync";
 import { KnowEachOtherGame } from "@/components/KnowEachOtherGame";
@@ -54,6 +54,11 @@ export default function RoomPage() {
   const code = String(params.code || "").toUpperCase();
   const [room, setRoom] = useState<Room | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inviteLink, setInviteLink] = useState(`/join/${code}`);
+
+  useEffect(() => {
+    setInviteLink(roomInviteUrl(code));
+  }, [code]);
   const [settings, setSettings] = useState<KnowEachOtherSettings>(DEFAULT_SETTINGS);
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [startFlash, setStartFlash] = useState(false);
@@ -203,8 +208,9 @@ export default function RoomPage() {
 
               {isHost && (
                 <aside className="panel room-block">
-                  <h2 className="room-block-title">Код комнаты</h2>
+                  <h2 className="room-block-title">Пригласить друга</h2>
                   <p className="room-code-value glitch-text">{code}</p>
+                  <p className="room-invite-link">{inviteLink}</p>
                   <button type="button" className="pixel-btn" onClick={handleCopy}>
                     {copied ? "Скопировано!" : "Скопировать ссылку"}
                   </button>

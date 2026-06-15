@@ -723,6 +723,17 @@ input {
   text-align: center;
 }
 
+.room-invite-link {
+  font-size: 8px;
+  line-height: 1.6;
+  word-break: break-all;
+  text-align: center;
+  opacity: 0.85;
+  padding: 10px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .room-modes {
   display: grid;
   gap: 16px;
